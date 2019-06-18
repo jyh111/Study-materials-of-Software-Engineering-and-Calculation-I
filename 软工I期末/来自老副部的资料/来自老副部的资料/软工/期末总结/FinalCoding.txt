@@ -1,0 +1,396 @@
+﻿package Chap16;
+
+/**
+ * 2013.04.15
+ * Michel
+ */
+import java.util.*;
+import java.io.*;
+public class Jukebox5 {
+	ArrayList<Song> songList = new ArrayList<Song>();
+	public static void main(String[] args){
+		new Jukebox5().go();
+	}
+	
+	class ArtistCompare implements Comparator<Song>{ 
+		@Override
+		public int compare(Song one, Song two) {
+			// TODO Auto-generated method stub
+			return one.getArtist().compareTo(two.getArtist());
+		}
+	}
+	
+	public void go(){
+		getSongs();
+		System.out.println(songList);
+		Collections.sort(songList);
+		System.out.println(songList);
+		
+		//ArrayList
+		ArtistCompare artistCompare = new ArtistCompare(); //创建Comparator的实例
+		Collections.sort(songList,artistCompare); 
+		System.out.println(songList);
+	}
+	 
+	void getSongs(){
+		try{
+			File file = new File("SongListMore.txt");
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			String line = null;
+			while((line=reader.readLine())!=null){
+				addSong(line);
+			}
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
+	}
+	
+	void addSong(String lineToParse){
+		String[] tokens = lineToParse.split("/");
+		
+		Song nextSong = new Song(tokens[0],tokens[1],tokens[2],tokens[3]);
+		songList.add(nextSong);
+	}
+}
+package Chap16;
+
+/**
+ * 2013.04.16
+ * Michel
+ * 有覆盖过的hashCode()与equals()的  2013.04.17
+ */
+public class Song implements Comparable<Song>{
+	//对应四种属性的四个实例变量
+	String title; 
+	String artist;
+	String rating;
+	String bpm;
+	
+	@Override
+	public boolean equals(Object aSong){
+		Song s = (Song) aSong;
+		return getTitle().equals(s.getTitle());
+	}
+	
+	@Override
+	public int hashCode(){
+		return title.hashCode();
+	}
+	
+	public int compareTo(Song s){
+		return title.compareTo(s.getTitle()); //返回String比较的结果
+	}
+	
+	//变量都会在创建时从构造函数中设定
+	Song(String t,String a,String r,String b){
+		title = t;
+		artist = a;
+		rating = r;
+		bpm = b;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public String getArtist() {
+		return artist;
+	}
+
+	public String getRating() {
+		return rating;
+	}
+
+	public String getBpm() {
+		return bpm;
+	}
+	
+	//将toString方法覆盖，让它返回歌名
+	public String toString(){
+		return title;
+	}
+}
+/**DailyAdvice*/
+import java.io.*;
+import java.net.*;
+public class DailyAdvice {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+        DailyAdvice client=new DailyAdvice();
+        client.go();
+	}
+	public void go() {
+		try{
+			Socket s=new Socket("127.0.0.1",4242);
+			InputStreamReader streamReader=new InputStreamReader(s.getInputStream());
+			BufferedReader reader=new BufferedReader(streamReader);
+			
+			String advice=reader.readLine();
+			System.out.println("Today you should :"+advice);
+			reader.close();
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
+	}
+}
+import java.io.*;
+import java.net.*;
+public class DailyAdviceServer {
+    String[] adviceList={"Take smaller bites","Go for the tight jeans","Just for today, be honesty","tell rhe" +
+    		"boss you really thanks"};
+    public void go(){
+    	try{
+    		ServerSocket severSocket=new ServerSocket(4242);
+    		while(true){
+    			Socket sock=severSocket.accept();
+    			PrintWriter writer=new PrintWriter(sock.getOutputStream());
+    			String advice=getAdvice();
+    			writer.println(advice);
+    			writer.close();
+    			System.out.println(advice);
+    		}
+    	}catch(Exception ex){
+    		ex.printStackTrace();
+    	}
+    }
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+       DailyAdviceServer sever=new DailyAdviceServer();
+       sever.go();
+	}
+	public String getAdvice(){
+		int random=(int)(Math.random()*adviceList.length);
+		return adviceList[random];
+	}
+}
+package Chap15;
+
+/**
+ * 2013.04.15
+ * Michel
+ * 全新配方的SimpleChatClient
+ */
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class SimpleChatClient {
+	JTextArea incoming;
+	JTextField outgoing;
+	BufferedReader reader;
+	PrintWriter writer;
+	Socket sock;
+
+	
+	public static void main(String[] args){
+		SimpleChatClient client = new SimpleChatClient();
+		client.go();
+	}
+	
+	public void go(){
+		JFrame frame = new JFrame("Ludicrously Simple Chat Client");
+		JPanel mainPanel = new JPanel();
+		incoming = new JTextArea(15,50);
+		incoming.setLineWrap(true);
+		incoming.setEditable(false);
+		JScrollPane qScroller = new JScrollPane(incoming);
+		qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		outgoing = new JTextField(20);
+		JButton sendButton = new JButton("Send");
+		sendButton.addActionListener(new SendButtonListener());
+		mainPanel.add(qScroller);
+		mainPanel.add(outgoing);
+		mainPanel.add(sendButton);
+		setUpNetworking();
+		
+		Thread readerThread = new Thread(new IncomingReader());
+		readerThread.start();
+		
+		frame.getContentPane().add(BorderLayout.CENTER, mainPanel);
+		frame.setSize(400,500);
+		frame.setVisible(true);	
+	}
+	
+	private void setUpNetworking(){
+		try{
+			sock = new Socket("127.0.0.1",5000);
+			InputStreamReader streamReader = new InputStreamReader(sock.getInputStream());
+			reader = new BufferedReader(streamReader);
+			writer = new PrintWriter(sock.getOutputStream());
+			System.out.println("networking established");
+		}catch(IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	public class SendButtonListener implements ActionListener {
+		public void actionPerformed(ActionEvent ev){
+			try{
+				writer.println(outgoing.getText());
+				writer.flush();
+			}catch(Exception ex){
+				ex.printStackTrace();
+			}
+			outgoing.setText("");
+			outgoing.requestFocus();
+		}
+	}
+	
+	public class IncomingReader implements Runnable {
+		public void run(){
+			String message;
+			try{
+				while((message=reader.readLine())!=null){
+					System.out.println("read " + message);
+					incoming.append(message + "\n");
+				}
+			}catch(Exception ex){
+				ex.printStackTrace();
+			}
+		}
+	}
+}
+package Chap12;
+
+/**
+ * 2013.03.29
+ * Michel
+ */
+
+import javax.swing.*;
+
+import java.awt.event.*;
+
+public class SimpleGuilB implements ActionListener {
+	JButton button;
+	
+	public static void main(String[] args) { 
+		SimpleGuilB gui = new SimpleGuilB();
+		gui.go();
+	}
+	
+	public void go(){
+		JFrame frame = new JFrame();          //创建Frame
+		button = new JButton("click me");     //给button创建实例
+		
+		button.addActionListener(this);       //向按钮注册
+		
+		frame.getContentPane().add(button);    //button添加到frame的pane上
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(300,300);    //设定size
+		frame.setVisible(true);    //显示frame
+	}
+	
+	//实现接口的方法
+	public void actionPerformed(ActionEvent event){
+		button.setText("I've been clicked!");
+	}
+
+}
+package Chap12;
+
+/**
+ * 2013.03.29
+ * Michel
+ * 按下按钮圆圈就会改变颜色
+ */
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*; 
+ 
+public class SimpleGui3C implements ActionListener {
+	JFrame frame;
+	public static void main(String[] args) { 
+		SimpleGui3C gui = new SimpleGui3C();
+		gui.go();
+	}
+	
+	public void go(){
+		frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		JButton button = new JButton("Change colors"); 
+		button.addActionListener(this);
+		
+		//书上用的MyDrawPanel，我这里为了方便重新写了个MyDrawPanelC，内容没变
+		MyDrawPanelC drawPanel = new MyDrawPanelC();
+		
+		frame.getContentPane().add(BorderLayout.SOUTH,button);
+		frame.getContentPane().add(BorderLayout.CENTER,drawPanel);
+		frame.setSize(300,300);
+		frame.setVisible(true);
+	}
+
+	public void actionPerformed(ActionEvent event){
+		frame.repaint();  //frame重绘
+	}
+ 
+}
+package Chap12;
+
+/**
+ * 2013.04.01
+ * Michel
+ */
+import javax.swing.*;
+import java.awt.*;
+public class SimpleAnimation {
+	int x = 70;
+	int y = 70;
+	
+	public static void main(String[] args) { 
+		 SimpleAnimation gui = new SimpleAnimation();
+		 gui.go();
+	}
+	
+	public void go(){
+		JFrame frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		MyDrawPanel drawPanel = new MyDrawPanel();
+		
+		frame.getContentPane().add(drawPanel);
+		frame.setSize(300,300);
+		frame.setVisible(true);
+		
+		//for(int i=0;i< frame.getHeight();i++){ 
+		for(int i=0;i<130;i++){ 
+			x++;
+			y++;
+			
+			drawPanel.repaint(); 
+			//frame.repaint();   //用于刷新frame
+			
+			try{
+				Thread.sleep(50);      //sleep,便于看清移动轨迹。
+			} catch(Exception ex) {
+				
+			}
+		}
+	}
+	
+	class MyDrawPanel extends JPanel {
+		public void paintComponent(Graphics g){
+			//重绘前先用默认背景色清除原来的轨迹
+			//（其实也可以不写下面2句，用上面的frame.repaint()）
+			g.setColor(Color.white);
+			g.fillRect(x, y, this.getWidth(), this.getHeight());
+			
+			g.setColor(Color.green);
+			g.fillOval(x, y, 40, 40);
+		}
+	}
+}
