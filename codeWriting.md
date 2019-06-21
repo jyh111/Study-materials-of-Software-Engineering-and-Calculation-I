@@ -3,7 +3,8 @@ codeWriting
 网络与线程
 ----------
 #### 内容来源于HeadFirst Java P471-P522
-
+理解记忆 P518-521 <br>
+理解P505-515的故事(线程锁)
 
 ### 使用BufferedReader从Socket读取数据
 
@@ -54,11 +55,19 @@ ServerSocket serverSock = new ServerSocket(4242);
 Socket socket = new Socket("127.0.0.1",4242);
 
 //服务器创建出与客户端通信的新Socket
-Socket socket = serverSock.accept();
+Socket socket = serverSock.accept();  //accept()方法会停下来,直到等接受到客户端的连接请求才会继续
 ```
 
 ### 启动新的线程
 ```Java
+//建立任务
+public class MyRunnable implements Runnable{ //Runnable接口
+
+    public void run(){ //需要实现run方法,即线程需要做的任务
+        System.out.println("Calm down in whatever condition");
+    }
+}
+
 //建立Runnable对象(线程的任务)
 Runnable threadJob = new MyRunnable();
 
@@ -68,3 +77,40 @@ Thread myThread = new Thread(threadJob);
 //启用Thread
 myThread.start();
 ```
+
+### 让线程小睡一下(暂时休眠)
+```Java
+public class MyRunnable implements Runnable{
+    public void run(){
+        //让线程小睡一下
+        try{
+            Thread.sleep(2*1000); //2000毫秒,即两秒
+        }catch(InterruptedException ex){
+            ex.printStackTrace();
+        }
+    }
+}
+```
+
+### 线程锁
+```
+//保证syncronized的方法会一起执行完毕,中间不会有其它线程插进
+
+public synchronized void increment(){
+    //方法实现
+}
+```
+
+### 理解要点
+* 网络部分
+  * 客户端与服务器的应用程序通过Socket连接来接通
+  * 客户端需要知道服务器的IP地址和端口号
+  * 0~1023的端口号是保留给HTTP、FTP、SMTP等已知的服务
+  * 服务器可以使用ServerSocket来等待用户对特定端口的请求,当ServerSocket接受到请求时，它会做一个Socket来接来接受客户端请求
+* 线程部分
+  * 线程和可以实现同时执行的能力,每个线程有独立的任务
+  * java虚拟机通过短时间内对线程交替执行实现看起来的同时执行
+  * 线程的调用由线程调度器决定,无法控制线程的调用,线程的调用是随机、不可预测的
+  * 可以通过使一个线程进入睡眠给其它线程执行的机会
+  * 可以通过同步化方法确保一段代码一起执行
+  * 同步化可能会发生死锁的情况,即两个同步化方法分别需要进入彼此而停机
