@@ -114,3 +114,7 @@ public synchronized void increment(){
   * 可以通过使一个线程进入睡眠给其它线程执行的机会
   * 可以通过同步化方法确保一段代码一起执行
   * 同步化可能会发生死锁的情况,即两个同步化方法分别需要进入彼此而停机
+
+### 代码部分注意点
+* 注意import package,常用package: javax.swing.*; java.io.*; java.net.*; java.util.*; java.awt.*; java.awt.event.*;
+* 涉及到输入输出都需要考虑运行错误,即用try...catch..模块,常见输入输出包括 BufferedReader, PrintWriter
